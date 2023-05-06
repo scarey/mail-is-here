@@ -15,8 +15,12 @@ MAX_STUCK_BOOT_COUNT = 5
 DOOR_OPEN = 1
 DOOR_CLOSED = 0
 
+BATTERY_ADJUSTMENT = 3.3 / 65535 * 4.9
+
 wake_pin = Pin(6, Pin.IN, pull=Pin.PULL_UP)
+adc_ctl = Pin(37, Pin.OUT)
 battery_pin = ADC(Pin(1))
+battery_pin.atten(ADC.ATTN_11DB)
 led_pin = Pin(35, Pin.OUT)
 esp32.wake_on_ext0(pin=wake_pin, level=esp32.WAKEUP_ANY_HIGH)
 start_time = 0
@@ -28,6 +32,13 @@ if not retained:
     retained = {'source': 'mailbox', 'battery_level': 0, 'boot_count': 0, 'stuck_boot_count': 0, 'last_door_state': DOOR_CLOSED,
                 'time_awake_millis': 0}
     nvr().put(retained)
+
+
+def read_battery():
+    adc_ctl.off()
+    reading = battery_pin.read_u16()
+    adc_ctl.on()
+    return round(reading * BATTERY_ADJUSTMENT, 3)
 
 
 def save_and_sleep(sleep_until_close):
@@ -64,7 +75,7 @@ if changed_state:
 
         retained['source'] = 'mailbox'
         retained['RSSI'] = sx.getRSSI()
-        retained['battery_level'] = round(battery_pin.read_u16() / 65535 * 6.6, 1)
+        retained['battery_level'] = read_battery()
         sx.send(json.dumps(retained).encode('utf-8'))
         led_pin.off()
     else:
