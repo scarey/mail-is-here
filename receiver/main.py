@@ -27,8 +27,10 @@ oled_height = 64
 # OLED reset pin
 i2c_rst = Pin(21, Pin.OUT)
 # Initialize the OLED display
+i2c_rst.value(1)
+time.sleep_ms(1)
 i2c_rst.value(0)
-time.sleep(0.010)
+time.sleep_ms(10)
 i2c_rst.value(1)  # must be held high after initialization
 # Setup the I2C lines
 i2c_scl = Pin(18, Pin.OUT, Pin.PULL_UP)
