@@ -97,25 +97,44 @@ def cb(events):
         print(err_str)
 
 
+def short_message_to_dict(short_text):
+    message_dict = {}
+    current_key = None
+    current_val = ''
+    for char in short_text:
+        if char.isupper():
+            if current_key:
+                message_dict[current_key] = current_val
+            current_key = char
+            current_val = ''
+        else:
+            current_val += char
+    message_dict[current_key] = current_val
+    return message_dict
+
+
 async def main():
     await client.connect()
     await asyncio.sleep(2)  # Give broker time
     await online()
     while True:
         oled.fill(0)
+        short_message = messages.pop()
         try:
-            message = messages.pop()
-            message_dict = json.loads(message)
+            message_dict = short_message_to_dict(short_message)
             sub_topic = 'default'
-            if 'source' in message_dict:
-                sub_topic = message_dict.pop('source')
+            if 'S' in message_dict:
+                sub_topic = message_dict.pop('S')
             await client.publish('{}/{}'.format(RELAY_TOPIC, sub_topic), json.dumps(message_dict))
+            if len(error_str) > 0:
+                await client.publish('{}/{}/error'.format(RELAY_TOPIC, sub_topic), error_str)
             oled.text('From: {}'.format(sub_topic), 0, 0)
             oled.text('Error: {}'.format(error_str), 0, 10)
-            oled.text('Batt: {}V'.format(message_dict['battery_level']), 0, 20)
-            oled.text('RSSI: {}'.format(message_dict['RSSI']), 0, 30)
+            oled.text('Batt: {}V'.format(message_dict['B']), 0, 20)
+            oled.text('RSSI: {}'.format(message_dict['N']), 0, 30)
             oled.show()
-        except IndexError:
+        except Exception:
+            print("Problem handling message: {}".format(short_message))
             await asyncio.sleep(1)
 
 
