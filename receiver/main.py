@@ -119,8 +119,8 @@ async def main():
     await online()
     while True:
         oled.fill(0)
-        short_message = messages.pop()
         try:
+            short_message = messages.pop()
             message_dict = short_message_to_dict(short_message)
             sub_topic = 'default'
             if 'S' in message_dict:
@@ -133,6 +133,8 @@ async def main():
             oled.text('Batt: {}V'.format(message_dict['B']), 0, 20)
             oled.text('RSSI: {}'.format(message_dict['N']), 0, 30)
             oled.show()
+        except IndexError:
+            await asyncio.sleep(1)
         except Exception:
             print("Problem handling message: {}".format(short_message))
             await asyncio.sleep(1)
